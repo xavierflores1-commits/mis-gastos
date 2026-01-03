@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Mis Gastos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f2f2f7;
+      margin: 0;
+      padding: 16px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    label {
+      font-size: 14px;
+      color: #555;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      margin-top: 6px;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+    }
+    button {
+      background: #007aff;
+      color: white;
+      border: none;
+      font-weight: bold;
+      margin-top: 16px;
+    }
+    button:active {
+      background: #005fcc;
+    }
+  </style>
+</head>
+<body>
+
+<h1>➕ Registrar gasto</h1>
+
+<div class="card">
+  <label>Monto</label>
+  <input type="number" id="monto" step="0.01" placeholder="$0.00">
+
+  <label>Fecha</label>
+  <input type="date" id="fecha">
+
+  <label>Categoría</label>
+  <select id="categoria">
+    <option>ALIMENTACIÓN</option>
+    <option>TRANSPORTE</option>
+    <option>HOGAR</option>
+    <option>OCIO</option>
+    <option>SALUD</option>
+    <option>SERVICIOS</option>
+    <option>MASCOTAS</option>
+    <option>PERSONAL</option>
+  </select>
+
+  <label>Subcategoría</label>
+  <input type="text" id="subcategoria" placeholder="Opcional">
+
+  <label>Beneficiario</label>
+  <select id="beneficiario">
+    <option>Yo</option>
+    <option>Familia</option>
+    <option>Otros</option>
+  </select>
+
+  <label>Medio de pago</label>
+  <select id="medio">
+    <option>Efectivo</option>
+    <option>Débito</option>
+    <option>Crédito</option>
+    <option>Transferencia</option>
+    <option>Peigo</option>
+    <option>Online-Gye</option>
+    <option>Online-Peigo</option>
+  </select>
+
+  <label>Lugar</label>
+  <input type="text" id="lugar" placeholder="Ej: Supermercado">
+
+  <label>Nota</label>
+  <textarea id="nota" placeholder="Opcional"></textarea>
+
+  <button onclick="guardarGasto()">Registrar gasto</button>
+</div>
+
+<script>
+let db;
+
+const request = indexedDB.open("GastosDB", 1);
+
+request.onupgradeneeded = function(e) {
+  db = e.target.result;
+  db.createObjectStore("gastos", { keyPath: "id", autoIncrement: true });
+};
+
+request.onsuccess = function(e) {
+  db = e.target.result;
+  document.getElementById("fecha").valueAsDate = new Date();
+};
+
+function guardarGasto() {
+  const gasto = {
+    monto: parseFloat(document.getElementById("monto").value),
+    fecha: document.getElementById("fecha").value,
+    categoria: document.getElementById("categoria").value,
+    subcategoria: document.getElementById("subcategoria").value,
+    beneficiario: document.getElementById("beneficiario").value,
+    medio: document.getElementById("medio").value,
+    lugar: document.getElementById("lugar").value,
+    nota: document.getElementById("nota").value
+  };
+
+  const tx = db.transaction("gastos", "readwrite");
+  tx.objectStore("gastos").add(gasto);
+
+  alert("✅ Gasto registrado");
+
+  document.getElementById("monto").value = "";
+  document.getElementById("subcategoria").value = "";
+  document.getElementById("lugar").value = "";
+  document.getElementById("nota").value = "";
+}
+</script>
+
+</body>
+</html>
