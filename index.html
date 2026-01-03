@@ -128,6 +128,7 @@ button.export:hover {
   cursor: pointer;
   padding: 2px 6px;
   font-size: 14px;
+  margin-left: 6px;
 }
 </style>
 </head>
@@ -280,7 +281,7 @@ document.getElementById("formGasto").onsubmit = e => {
   actualizarDashboard();
 };
 
-// Dashboard con barras de progreso y boton de eliminar por registro
+// Dashboard con barras de progreso y ultimo gasto
 function actualizarDashboard() {
   const gastos = JSON.parse(localStorage.getItem("gastos") || "[]");
   const mesActual = new Date().toISOString().slice(0,7);
@@ -304,7 +305,7 @@ function actualizarDashboard() {
   let html = `<div class="total">💰 Total mes: $${total.toFixed(2)}</div>`;
   html += `<div class="uso-general">📈 Uso presupuesto total: ${((total/totalPresupuesto)*100).toFixed(1)}%</div><hr>`;
 
-  // Por categoria con barras
+  // Suma por categoria con barras de progreso
   Object.keys(porCategoria).forEach(c=>{
     const pct=((porCategoria[c]/PRESUPUESTOS[c])*100);
     const pctDisplay=pct.toFixed(1);
@@ -312,22 +313,22 @@ function actualizarDashboard() {
     html+=`<div class="progress-bar"><div class="progress-fill" style="width:${Math.min(pct,100)}%"></div></div>`;
   });
 
-  // Lista individual de gastos con boton ❌
-  html += `<hr><div><strong>Detalle de gastos:</strong></div>`;
-  delMes.forEach((g,index)=>{
-    html += `<div style="display:flex; justify-content:space-between; align-items:center; margin:2px 0; font-size:14px;">
-              <span>${g.fecha} - ${g.categoria} / ${g.subcategoria} - $${g.monto.toFixed(2)}</span>
-              <button class="borrar-btn" onclick="eliminarGasto(${index})">❌</button>
-             </div>`;
-  });
+  // Ultimo gasto ingresado con boton ❌
+  const ultimo = delMes[delMes.length-1];
+  html += `<hr><div><strong>Ultimo gasto ingresado:</strong></div>`;
+  html += `<div style="display:flex; justify-content:space-between; align-items:center; margin:2px 0; font-size:14px;">
+            <span>${ultimo.fecha} - ${ultimo.categoria} / ${ultimo.subcategoria} - $${ultimo.monto.toFixed(2)}</span>
+            <button class="borrar-btn" onclick="eliminarUltimoGasto()">❌</button>
+           </div>`;
 
   dashboard.innerHTML=html;
 }
 
-// Función para eliminar un gasto individual
-function eliminarGasto(index){
+// Función para eliminar el ultimo gasto
+function eliminarUltimoGasto(){
   const gastos = JSON.parse(localStorage.getItem("gastos") || "[]");
-  gastos.splice(index,1);
+  if(gastos.length===0) return;
+  gastos.pop();
   localStorage.setItem("gastos", JSON.stringify(gastos));
   actualizarDashboard();
 }
