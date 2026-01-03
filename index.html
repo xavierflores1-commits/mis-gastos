@@ -5,274 +5,229 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>💸 Mis Gastos</title>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
 body {
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  background:#f2f2f7;
-  margin:0;
-  padding:16px;
+  background: #f2f2f7;
+  margin: 0;
+  padding: 16px;
 }
-h1,h2 { text-align:center; }
+
+h1, h2 {
+  text-align: center;
+}
+
 .card {
-  background:white;
-  border-radius:16px;
-  padding:16px;
-  margin-bottom:16px;
-  box-shadow:0 2px 8px rgba(0,0,0,.05);
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
 }
-label {
-  font-weight:600;
-  margin-top:12px;
-  display:block;
+
+input, select, button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 8px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  font-size: 16px;
 }
-select,input,button {
-  width:100%;
-  padding:12px;
-  font-size:16px;
-  margin-top:6px;
-  border-radius:10px;
-  border:1px solid #ccc;
-}
-.monto {
-  display:flex;
-  gap:10px;
-}
-.monto select { flex:1; }
+
 button {
-  background:#007aff;
-  color:white;
-  border:none;
-  margin-top:20px;
+  background: #007aff;
+  color: white;
+  border: none;
+  margin-top: 16px;
 }
-.tab {
-  display:flex;
-  gap:10px;
-  margin-bottom:16px;
+
+nav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
 }
-.tab button {
-  flex:1;
-  background:#e5e5ea;
-  color:black;
+
+nav button {
+  flex: 1;
 }
-.tab button.active {
-  background:#007aff;
-  color:white;
+
+.hidden {
+  display: none;
 }
+
 canvas {
-  width:100%;
-  height:220px;
-  margin-top:12px;
+  margin-top: 24px;
 }
 </style>
 </head>
 
 <body>
 
-<h1>💸 Mis Gastos</h1>
+<h1>💸 Control de Gastos</h1>
 
-<div class="tab">
-  <button onclick="mostrar('registro')" class="active">📝 Registrar</button>
-  <button onclick="mostrar('dashboard')">📊 Dashboard</button>
-</div>
+<nav>
+  <button onclick="mostrar('registro')">➕ Registrar</button>
+  <button id="btnDashboard" onclick="mostrar('dashboard')">📊 Dashboard</button>
+</nav>
 
 <!-- REGISTRO -->
-<div id="registro" class="card">
+<section id="registro" class="card">
+  <h2>➕ Nuevo gasto</h2>
 
-<label>📅 Fecha</label>
-<input type="date" id="fecha">
+  <label>📅 Fecha</label>
+  <input type="date" id="fecha">
 
-<label>💵 Monto</label>
-<div class="monto">
+  <label>💵 Dólares</label>
   <select id="dolares"></select>
+
+  <label>🪙 Centavos</label>
   <select id="centavos"></select>
-</div>
 
-<label>📂 Categoría</label>
-<select id="categoria"></select>
+  <label>📂 Categoría</label>
+  <select id="categoria" onchange="cargarSubcategorias()"></select>
 
-<label>📁 Subcategoría</label>
-<select id="subcategoria"></select>
+  <label>📁 Subcategoría</label>
+  <select id="subcategoria"></select>
 
-<label>👤 Beneficiario</label>
-<select id="beneficiario">
-  <option>Yo</option>
-  <option>Familia</option>
-  <option>Otros</option>
-</select>
+  <label>📍 Lugar</label>
+  <select id="lugar"></select>
 
-<label>📍 Lugar</label>
-<select id="lugar">
-  <option>Casa</option>
-  <option>Trabajo</option>
-  <option>Supermercado</option>
-  <option>Farmacia</option>
-  <option>Gasolinera</option>
-  <option>Restaurante</option>
-  <option>Gimnasio</option>
-  <option>Online</option>
-  <option>Otro</option>
-</select>
+  <label>👤 Beneficiario</label>
+  <input id="beneficiario" placeholder="Ej: Yo, Familia, Mascota">
 
-<label>💳 Medio de pago</label>
-<select id="pago">
-  <option>Efectivo</option>
-  <option>Tarjeta</option>
-  <option>Peigo</option>
-  <option>Online-Gye</option>
-  <option>Online-Peigo</option>
-</select>
-
-<button onclick="guardar()">💾 Guardar gasto</button>
-
-</div>
+  <button onclick="guardarGasto()">💾 Guardar</button>
+</section>
 
 <!-- DASHBOARD -->
-<div id="dashboard" class="card" style="display:none">
+<section id="dashboard" class="hidden">
+  <div class="card">
+    <h2>📊 Dashboard</h2>
+    <h3>Total gastado</h3>
+    <p id="totalGastado">$0.00</p>
+  </div>
 
-<h2>📊 Resumen general</h2>
+  <div class="card">
+    <h3>Por categoría</h3>
+    <canvas id="chartCategorias"></canvas>
+  </div>
 
-<canvas id="grafico"></canvas>
+  <div class="card">
+    <h3>Por día</h3>
+    <canvas id="chartDias"></canvas>
+  </div>
 
-<div id="resumen"></div>
-
-<button onclick="exportar()">📤 Exportar a Excel</button>
-
-</div>
+  <button onclick="exportarExcel()">📤 Exportar a Excel</button>
+</section>
 
 <script>
-// ================== INICIAL ==================
-fecha.value = new Date().toISOString().split("T")[0];
-
-for(let i=0;i<=500;i++){
-  dolares.innerHTML += `<option>${i}</option>`;
-}
-for(let i=0;i<100;i++){
-  centavos.innerHTML += `<option>${i.toString().padStart(2,"0")}</option>`;
-}
-
-// ================== CATEGORÍAS ==================
+/* DATOS BASE */
 const categorias = {
-"🍽️ ALIMENTACIÓN": [
-  "🛒 Supermercado","🍳 Desayuno","🍛 Almuerzo","🍽️ Cena",
-  "🍪 Snacks","🥤 Bebidas","🎂 Cumpleaños"
-],
-"🚗 TRANSPORTE": [
-  "⛽ Gasolina","🚕 Taxi","🚌 Bus","🛠️ Mantenimiento",
-  "🔩 Repuestos","🛣️ Peajes","🅿️ Parqueo"
-],
-"🩺 SALUD": [
-  "🏥 Farmacia","💊 Medicamentos","👨‍⚕️ Consulta médica",
-  "🧪 Exámenes","🏋️ Gimnasio","💧 Hidratación","🥛 Suplementos"
-],
-"🎉 OCIO": [
-  "📺 Streaming","🎬 Cine","🍻 Salidas","✈️ Viajes","🛍️ Compras personales"
-],
-"🎁 SOCIAL": [
-  "🎁 Regalos","🎂 Cumpleaños","🍽️ Invitaciones","❤️ Donaciones"
-],
-"🐾 MASCOTAS": [
-  "🍖 Comida","🐶 Veterinario","🧼 Higiene","🦴 Accesorios"
-],
-"🏠 HOGAR": [
-  "🧹 Compras hogar","🔧 Mantenimiento hogar","💧 Agua","💡 Luz"
-]
+  "🍽 Alimentación": ["Supermercado", "Restaurante", "Café"],
+  "🚗 Transporte": ["Gasolina", "Uber", "Bus"],
+  "🏥 Salud": ["Medicamentos", "Exámenes", "Consultas"],
+  "🎉 Ocio": ["Cine", "Viajes", "Suscripciones"],
+  "🐶 Mascotas": ["Comida", "Veterinario"],
+  "👥 Social": ["Regalos", "Salidas"],
+  "🚘 Auto": ["Repuestos", "Mantenimiento"]
 };
 
-for(let c in categorias){
-  categoria.innerHTML += `<option>${c}</option>`;
-}
+const lugares = ["Supermercado", "Farmacia", "Gasolinera", "Online", "Otro"];
 
-function cargarSub(){
-  subcategoria.innerHTML = "";
-  categorias[categoria.value].forEach(s=>{
-    subcategoria.innerHTML += `<option>${s}</option>`;
-  });
-}
-categoria.onchange = cargarSub;
-cargarSub();
+/* INICIALIZACIÓN */
+function init() {
+  const hoy = new Date().toISOString().split("T")[0];
+  fecha.value = hoy;
 
-// ================== TABS ==================
-function mostrar(v){
-  registro.style.display = v==="registro" ? "block" : "none";
-  dashboard.style.display = v==="dashboard" ? "block" : "none";
-
-  document.querySelectorAll(".tab button")
-    .forEach(b=>b.classList.remove("active"));
-  event.target.classList.add("active");
-
-  if(v==="dashboard") dibujar();
-}
-
-// ================== GUARDAR ==================
-function guardar(){
-  const monto = parseFloat(`${dolares.value}.${centavos.value}`);
-  if(isNaN(monto) || monto<=0){
-    alert("Monto inválido");
-    return;
+  for (let i = 0; i <= 500; i++) {
+    dolares.innerHTML += `<option>${i}</option>`;
+  }
+  for (let i = 0; i < 100; i++) {
+    centavos.innerHTML += `<option>${i.toString().padStart(2,'0')}</option>`;
   }
 
+  for (let c in categorias) {
+    categoria.innerHTML += `<option>${c}</option>`;
+  }
+
+  lugares.forEach(l => lugar.innerHTML += `<option>${l}</option>`);
+
+  cargarSubcategorias();
+}
+init();
+
+/* SUBCATEGORÍAS */
+function cargarSubcategorias() {
+  subcategoria.innerHTML = "";
+  categorias[categoria.value].forEach(sc => {
+    subcategoria.innerHTML += `<option>${sc}</option>`;
+  });
+}
+
+/* GUARDAR */
+function guardarGasto() {
   const gasto = {
     fecha: fecha.value,
-    monto,
+    monto: parseFloat(dolares.value) + parseFloat("0." + centavos.value),
     categoria: categoria.value,
     subcategoria: subcategoria.value,
-    beneficiario: beneficiario.value,
     lugar: lugar.value,
-    pago: pago.value
+    beneficiario: beneficiario.value || "N/A"
   };
 
-  const data = JSON.parse(localStorage.getItem("gastos") || "[]");
-  data.push(gasto);
-  localStorage.setItem("gastos", JSON.stringify(data));
+  const gastos = JSON.parse(localStorage.getItem("gastos")) || [];
+  gastos.push(gasto);
+  localStorage.setItem("gastos", JSON.stringify(gastos));
 
   alert("✅ Gasto guardado");
 }
 
-// ================== DASHBOARD ==================
-function dibujar(){
-  const data = JSON.parse(localStorage.getItem("gastos") || "[]");
-
-  if(data.length === 0){
-    resumen.innerHTML = "<p>📭 Aún no hay gastos registrados</p>";
-    return;
-  }
-
-  const totales = {};
-  data.forEach(g=>{
-    if(typeof g.monto === "number" && !isNaN(g.monto)){
-      totales[g.categoria] = (totales[g.categoria] || 0) + g.monto;
-    }
-  });
-
-  const canvas = document.getElementById("grafico");
-  canvas.width = 320;
-  canvas.height = 220;
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  let x = 20;
-  resumen.innerHTML = "";
-
-  for(let c in totales){
-    const h = totales[c] * 4;
-    ctx.fillStyle = "#007aff";
-    ctx.fillRect(x, canvas.height - h - 20, 30, h);
-
-    resumen.innerHTML += `<p>${c}: <b>$${totales[c].toFixed(2)}</b></p>`;
-    x += 45;
-  }
+/* NAVEGACIÓN */
+function mostrar(id) {
+  registro.classList.add("hidden");
+  dashboard.classList.add("hidden");
+  document.getElementById(id).classList.remove("hidden");
 }
 
-// ================== EXPORTAR ==================
-function exportar(){
-  const data = JSON.parse(localStorage.getItem("gastos") || "[]");
-  let csv = "Fecha,Monto,Categoria,Subcategoria,Beneficiario,Lugar,MedioPago\n";
+/* DASHBOARD */
+function actualizarDashboard() {
+  const gastos = JSON.parse(localStorage.getItem("gastos")) || [];
+  if (gastos.length === 0) return;
 
-  data.forEach(g=>{
-    csv += `${g.fecha},${g.monto},${g.categoria},${g.subcategoria},${g.beneficiario},${g.lugar},${g.pago}\n`;
+  const total = gastos.reduce((s, g) => s + g.monto, 0);
+  totalGastado.innerText = "$" + total.toFixed(2);
+
+  const porCategoria = {};
+  const porDia = {};
+
+  gastos.forEach(g => {
+    porCategoria[g.categoria] = (porCategoria[g.categoria] || 0) + g.monto;
+    porDia[g.fecha] = (porDia[g.fecha] || 0) + g.monto;
   });
 
-  const blob = new Blob([csv], {type:"text/csv"});
+  new Chart(chartCategorias, {
+    type: "pie",
+    data: { labels: Object.keys(porCategoria), datasets: [{ data: Object.values(porCategoria) }] }
+  });
+
+  new Chart(chartDias, {
+    type: "line",
+    data: { labels: Object.keys(porDia), datasets: [{ label: "Gasto diario", data: Object.values(porDia) }] }
+  });
+}
+
+btnDashboard.addEventListener("click", actualizarDashboard);
+
+/* EXPORTAR */
+function exportarExcel() {
+  const gastos = JSON.parse(localStorage.getItem("gastos")) || [];
+  let csv = "Fecha,Categoría,Subcategoría,Lugar,Beneficiario,Monto\n";
+
+  gastos.forEach(g => {
+    csv += `${g.fecha},${g.categoria},${g.subcategoria},${g.lugar},${g.beneficiario},${g.monto}\n`;
+  });
+
+  const blob = new Blob([csv], { type: "text/csv" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = "gastos.csv";
