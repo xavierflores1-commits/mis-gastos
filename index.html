@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Registro de Gastos</title>
+<title>Gastos Personales</title>
 
 <style>
 body {
@@ -12,61 +12,64 @@ body {
   margin: 0;
   padding: 16px;
 }
-
-h1 {
-  text-align: center;
-}
-
+h1,h2 { text-align:center; }
 .card {
-  background: white;
-  border-radius: 16px;
-  padding: 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  background:white;
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:16px;
+  box-shadow:0 2px 8px rgba(0,0,0,.05);
 }
-
 label {
-  font-weight: 600;
-  margin-top: 12px;
-  display: block;
+  font-weight:600;
+  margin-top:12px;
+  display:block;
 }
-
 select, button {
-  width: 100%;
-  padding: 12px;
-  font-size: 16px;
-  margin-top: 6px;
-  border-radius: 10px;
-  border: 1px solid #ccc;
+  width:100%;
+  padding:12px;
+  font-size:16px;
+  margin-top:6px;
+  border-radius:10px;
+  border:1px solid #ccc;
 }
-
-.monto {
-  display: flex;
-  gap: 10px;
-}
-
-.monto select {
-  flex: 1;
-}
-
+.monto { display:flex; gap:10px; }
+.monto select { flex:1; }
 button {
-  background: #007aff;
-  color: white;
-  border: none;
-  margin-top: 20px;
+  background:#007aff;
+  color:white;
+  border:none;
+  margin-top:20px;
 }
-
-button:active {
-  background: #005fcc;
+canvas { width:100%; height:220px; }
+.tab {
+  display:flex;
+  gap:10px;
+  margin-bottom:16px;
+}
+.tab button {
+  flex:1;
+  background:#e5e5ea;
+  color:black;
+}
+.tab button.active {
+  background:#007aff;
+  color:white;
 }
 </style>
 </head>
 
 <body>
 
-<h1>💸 Nuevo Gasto</h1>
+<h1>💸 Gastos</h1>
 
-<div class="card">
+<div class="tab">
+  <button onclick="mostrar('registro')" class="active">Registrar</button>
+  <button onclick="mostrar('dashboard')">Dashboard</button>
+</div>
+
+<!-- REGISTRO -->
+<div id="registro" class="card">
 
 <label>💵 Monto</label>
 <div class="monto">
@@ -89,78 +92,91 @@ button:active {
 
 <label>📍 Lugar</label>
 <select id="lugar">
-  <option>Trabajo</option>
-  <option>Casa</option>
-  <option>Supermercado</option>
-  <option>Restaurante</option>
-  <option>Gimnasio</option>
-  <option>Otro</option>
+  <option>Casa</option><option>Trabajo</option><option>Supermercado</option>
+  <option>Farmacia</option><option>Gasolinera</option><option>Restaurante</option>
+  <option>Gimnasio</option><option>Online</option><option>Otro</option>
 </select>
 
 <label>💳 Medio de pago</label>
 <select id="pago">
-  <option>Efectivo</option>
-  <option>Tarjeta</option>
-  <option>Peigo</option>
-  <option>Online-Gye</option>
-  <option>Online-Peigo</option>
+  <option>Efectivo</option><option>Tarjeta</option>
+  <option>Peigo</option><option>Online-Gye</option><option>Online-Peigo</option>
 </select>
 
 <button onclick="guardar()">Guardar gasto</button>
+</div>
 
+<!-- DASHBOARD -->
+<div id="dashboard" class="card" style="display:none">
+<h2>📊 Resumen del mes</h2>
+<canvas id="grafico"></canvas>
+<div id="resumen"></div>
 </div>
 
 <script>
-/* MONTO */
-for(let i=0;i<=500;i++){
-  dolares.innerHTML += `<option>${i}</option>`;
-}
-for(let i=0;i<100;i++){
-  centavos.innerHTML += `<option>${i.toString().padStart(2,'0')}</option>`;
-}
+/* Monto */
+for(let i=0;i<=500;i++) dolares.innerHTML+=`<option>${i}</option>`;
+for(let i=0;i<100;i++) centavos.innerHTML+=`<option>${i.toString().padStart(2,'0')}</option>`;
 
-/* CATEGORÍAS */
-const categorias = {
-  "🍽️ Comida": ["Almuerzo", "Cena", "Cumpleaños", "Snack"],
-  "🚗 Transporte": ["Bus", "Taxi", "Gasolina"],
-  "🏃 Salud / Deporte": ["Gatorade", "Gimnasio", "Equipo"],
-  "🎉 Social": ["Regalo", "Salida", "Evento"],
-  "🏠 Hogar": ["Servicios", "Compras", "Mantenimiento"]
+/* Categorías y Subcategorías */
+const categorias={
+"ALIMENTACIÓN":["Supermercado","Desayuno","Almuerzo","Cena","Snacks","Bebidas","Cumpleaños"],
+"TRANSPORTE":["Gasolina","Taxi","Bus","Mantenimiento","Repuestos","Peajes","Parqueo"],
+"SALUD":["Farmacia","Medicamentos","Consulta médica","Exámenes","Gimnasio","Hidratación","Suplementos"],
+"OCIO":["Streaming","Cine","Salidas","Viajes","Compras personales"],
+"SOCIAL":["Regalos","Cumpleaños","Invitaciones","Donaciones"],
+"MASCOTAS":["Comida","Veterinario","Higiene","Accesorios"],
+"HOGAR":["Compras hogar","Mantenimiento hogar","Agua","Luz"]
 };
 
-const cat = document.getElementById("categoria");
-const sub = document.getElementById("subcategoria");
+for(let c in categorias) categoria.innerHTML+=`<option>${c}</option>`;
+function cargarSub(){
+  subcategoria.innerHTML="";
+  categorias[categoria.value].forEach(s=>subcategoria.innerHTML+=`<option>${s}</option>`);
+}
+categoria.onchange=cargarSub; cargarSub();
 
-for (let c in categorias) {
-  cat.innerHTML += `<option>${c}</option>`;
+/* Tabs */
+function mostrar(v){
+  registro.style.display=v==="registro"?"block":"none";
+  dashboard.style.display=v==="dashboard"?"block":"none";
+  document.querySelectorAll(".tab button").forEach(b=>b.classList.remove("active"));
+  event.target.classList.add("active");
+  if(v==="dashboard") dibujar();
 }
 
-function cargarSub() {
-  sub.innerHTML = "";
-  categorias[cat.value].forEach(s => {
-    sub.innerHTML += `<option>${s}</option>`;
-  });
-}
-cat.onchange = cargarSub;
-cargarSub();
-
-/* GUARDAR */
-function guardar() {
-  const gasto = {
-    fecha: new Date().toISOString(),
-    monto: `${dolares.value}.${centavos.value}`,
-    categoria: cat.value,
-    subcategoria: sub.value,
-    beneficiario: beneficiario.value,
-    lugar: lugar.value,
-    pago: pago.value
+/* Guardar */
+function guardar(){
+  const g={
+    fecha:new Date().toISOString(),
+    monto:parseFloat(`${dolares.value}.${centavos.value}`),
+    categoria:categoria.value,
+    subcategoria:subcategoria.value
   };
+  const d=JSON.parse(localStorage.getItem("gastos")||"[]");
+  d.push(g);
+  localStorage.setItem("gastos",JSON.stringify(d));
+  alert("✅ Guardado");
+}
 
-  const data = JSON.parse(localStorage.getItem("gastos") || "[]");
-  data.push(gasto);
-  localStorage.setItem("gastos", JSON.stringify(data));
+/* Dashboard */
+function dibujar(){
+  const data=JSON.parse(localStorage.getItem("gastos")||"[]");
+  const tot={};
+  data.forEach(g=>tot[g.categoria]=(tot[g.categoria]||0)+g.monto);
 
-  alert("✅ Gasto guardado");
+  const ctx=grafico.getContext("2d");
+  ctx.clearRect(0,0,300,200);
+  let x=20;
+  for(let c in tot){
+    ctx.fillStyle="#007aff";
+    ctx.fillRect(x,200-tot[c]/5,30,tot[c]/5);
+    ctx.fillText(c,x,195);
+    x+=40;
+  }
+
+  resumen.innerHTML="";
+  for(let c in tot) resumen.innerHTML+=`<p><b>${c}</b>: $${tot[c].toFixed(2)}</p>`;
 }
 </script>
 
