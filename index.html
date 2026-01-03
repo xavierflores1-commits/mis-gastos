@@ -351,6 +351,12 @@ function exportar(){
 }
 
 // Inicializacion
+
+// --- FECHA POR DEFECTO HOY ---
+const hoy = new Date().toISOString().slice(0,10);
+fecha.value = hoy;
+// -----------------------------
+
 cargarCategorias();
 actualizarDashboard();
 </script>
