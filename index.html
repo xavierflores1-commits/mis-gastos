@@ -75,13 +75,49 @@ button.export:hover {
   background: #1f8f4c;
 }
 
-.dashboard div {
-  margin: 6px 0;
-}
-
 .monto-container {
   display: flex;
   gap: 8px;
+}
+
+.dashboard {
+  font-size: 16px;
+}
+
+.dashboard .total {
+  font-size: 22px;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.dashboard .uso-general {
+  font-size: 18px;
+  font-weight: bold;
+  color: #27ae60;
+  margin-bottom: 8px;
+}
+
+.dashboard .categoria {
+  margin: 6px 0;
+}
+
+.progress-bar {
+  background: #ddd;
+  border-radius: 8px;
+  height: 12px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 8px;
+  background: #3498db;
+  text-align: right;
+  padding-right: 4px;
+  color: white;
+  font-size: 12px;
+  line-height: 12px;
 }
 </style>
 </head>
@@ -97,10 +133,10 @@ button.export:hover {
 <label>📅 Fecha</label>
 <input type="date" id="fecha" required>
 
-<label>📂 Categoría</label>
+<label>📂 Categoria</label>
 <select id="categoria"></select>
 
-<label>📁 Subcategoría</label>
+<label>📁 Subcategoria</label>
 <select id="subcategoria"></select>
 
 <label>👤 Beneficiario</label>
@@ -138,7 +174,7 @@ button.export:hover {
 <label>📝 Detalle</label>
 <textarea id="detalle"></textarea>
 
-<label>🗒️ Observación</label>
+<label>🗒️ Observacion</label>
 <textarea id="observacion"></textarea>
 
 <button type="submit">Guardar</button>
@@ -153,7 +189,7 @@ button.export:hover {
 </div>
 
 <script>
-// 💰 Presupuestos por categoría
+// Presupuestos por categoria
 const PRESUPUESTOS = {
   ALIMENTACION: 330,
   TRANSPORTE: 290,
@@ -166,7 +202,7 @@ const PRESUPUESTOS = {
   DEUDAS: 70
 };
 
-// 🏷️ Categorías con emojis
+// Categorias con emojis
 const categorias = {
   ALIMENTACION: ["SOCIAL 🍻","SUPERMERCADO 🛒","RESTAURANTE 🍽️","GIMNASIO 🏋️","CAFE ☕","TIENDA 🏪"],
   TRANSPORTE: ["GASOLINA ⛽","BUS 🚌","UBER 🚗","TAXI 🚕","TRICIMOTO 🛵","ESTACIONAMIENTO 🅿️","GARAGE 🏠"],
@@ -179,18 +215,18 @@ const categorias = {
   DEUDAS: ["DEPRATI 🛍️","JEP 🏦","CLARO 📱","ICLOUD ☁️","ETAFASHION 👗"]
 };
 
-// 🏗️ Elementos del DOM
+// Elementos DOM
 const categoria = document.getElementById("categoria");
 const subcategoria = document.getElementById("subcategoria");
 const dashboard = document.getElementById("dashboard");
 const montoDolar = document.getElementById("montoDolar");
 const montoCentavo = document.getElementById("montoCentavo");
 
-// 💵 Llenar selects de monto tipo iPhone
+// Llenar selects de monto tipo iphone
 for(let i=0;i<=1000;i++) montoDolar.innerHTML += `<option>${i}</option>`;
 for(let i=0;i<100;i++) montoCentavo.innerHTML += `<option>${i}</option>`;
 
-// 🗂️ Cargar categorías
+// Cargar categorias
 function cargarCategorias() {
   categoria.innerHTML = "";
   Object.keys(categorias).forEach(c => {
@@ -199,7 +235,7 @@ function cargarCategorias() {
   actualizarSub();
 }
 
-// 🔄 Actualizar subcategorías según categoría
+// Actualizar subcategorias
 function actualizarSub() {
   subcategoria.innerHTML = "";
   categorias[categoria.value].forEach(s => {
@@ -209,7 +245,7 @@ function actualizarSub() {
 
 categoria.onchange = actualizarSub;
 
-// 📝 Guardar gasto
+// Guardar gasto
 document.getElementById("formGasto").onsubmit = e => {
   e.preventDefault();
 
@@ -234,58 +270,60 @@ document.getElementById("formGasto").onsubmit = e => {
   actualizarDashboard();
 };
 
-// 📊 Dashboard con % de presupuesto por categoría
+// Dashboard con barras de progreso
 function actualizarDashboard() {
   const gastos = JSON.parse(localStorage.getItem("gastos") || "[]");
   const mesActual = new Date().toISOString().slice(0,7);
   const delMes = gastos.filter(g => g.fecha.startsWith(mesActual));
 
-  if (delMes.length === 0) {
+  if(delMes.length===0){
     dashboard.innerHTML = "Sin gastos este mes";
     return;
   }
 
-  let total = 0;
-  const porCategoria = {};
+  let total=0;
+  const porCategoria={};
 
-  delMes.forEach(g => {
-    total += g.monto;
-    porCategoria[g.categoria] = (porCategoria[g.categoria] || 0) + g.monto;
+  delMes.forEach(g=>{
+    total+=g.monto;
+    porCategoria[g.categoria]=(porCategoria[g.categoria]||0)+g.monto;
   });
 
-  let html = `<div><strong>Total mes:</strong> $${total.toFixed(2)}</div>`;
   const totalPresupuesto = Object.values(PRESUPUESTOS).reduce((a,b)=>a+b,0);
-  html += `<div><strong>Uso presupuesto total:</strong> ${((total/totalPresupuesto)*100).toFixed(1)}%</div><hr>`;
 
-  Object.keys(porCategoria).forEach(c => {
-    const pct = ((porCategoria[c]/PRESUPUESTOS[c])*100).toFixed(1);
-    html += `<div>${c}: $${porCategoria[c].toFixed(2)} / $${PRESUPUESTOS[c]} (${pct}%)</div>`;
+  let html = `<div class="total">💰 Total mes: $${total.toFixed(2)}</div>`;
+  html += `<div class="uso-general">📈 Uso presupuesto total: ${((total/totalPresupuesto)*100).toFixed(1)}%</div><hr>`;
+
+  Object.keys(porCategoria).forEach(c=>{
+    const pct=((porCategoria[c]/PRESUPUESTOS[c])*100);
+    const pctDisplay=pct.toFixed(1);
+    html+=`<div class="categoria">${c}: $${porCategoria[c].toFixed(2)} / $${PRESUPUESTOS[c]} (${pctDisplay}%)</div>`;
+    html+=`<div class="progress-bar"><div class="progress-fill" style="width:${Math.min(pct,100)}%"></div></div>`;
   });
 
-  dashboard.innerHTML = html;
+  dashboard.innerHTML=html;
 }
 
-// 📤 Exportar a CSV
-function exportar() {
-  const gastos = JSON.parse(localStorage.getItem("gastos") || "[]");
-  if (!gastos.length) return;
+// Exportar a CSV
+function exportar(){
+  const gastos=JSON.parse(localStorage.getItem("gastos")||"[]");
+  if(!gastos.length) return;
 
-  let csv = Object.keys(gastos[0]).join(",") + "\n";
-  gastos.forEach(g => {
-    csv += Object.values(g).join(",") + "\n";
+  let csv=Object.keys(gastos[0]).join(",")+"\n";
+  gastos.forEach(g=>{
+    csv+=Object.values(g).join(",")+"\n";
   });
 
-  const blob = new Blob([csv], {type: "text/csv"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "gastos.csv";
+  const blob=new Blob([csv],{type:"text/csv"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="gastos.csv";
   a.click();
 }
 
-// 🔹 Inicialización
+// Inicializacion
 cargarCategorias();
 actualizarDashboard();
-
 </script>
 
 </body>
