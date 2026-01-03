@@ -3,31 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Control de Gastos</title>
+<title>Gastos</title>
 
 <style>
 body {
   margin: 0;
   font-family: system-ui, Arial, sans-serif;
-  background: #f2f2f2;
+  background: #f4f6f8;
   font-size: 18px;
+  color: #222;
 }
 
 .container {
   max-width: 420px;
   margin: auto;
-  padding: 12px;
+  padding: 14px;
 }
 
 h2 {
   text-align: center;
+  margin-bottom: 10px;
 }
 
 .card {
-  background: white;
+  background: #ffffff;
   padding: 14px;
-  border-radius: 10px;
+  border-radius: 12px;
   margin-bottom: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
 
 label {
@@ -43,19 +46,23 @@ input, select, textarea, button {
   font-size: 17px;
 }
 
+input[type=number] {
+  text-align: center;
+}
+
 textarea {
   resize: vertical;
 }
 
 button {
-  background: #2e86de;
+  background: #2c3e50;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   margin-top: 16px;
 }
 
-button.secondary {
+button.export {
   background: #27ae60;
 }
 
@@ -68,55 +75,54 @@ button.secondary {
 <body>
 <div class="container">
 
-<h2>📌 Registro de Gastos</h2>
+<h2>🧾 Registro</h2>
 
 <div class="card">
 <form id="formGasto">
 
-<label>Fecha</label>
+<label>📅 Fecha</label>
 <input type="date" id="fecha" required>
 
-<label>Categoría</label>
+<label>📂 Categoria</label>
 <select id="categoria"></select>
 
-<label>Subcategoría</label>
+<label>📁 Subcategoria</label>
 <select id="subcategoria"></select>
 
-<label>Beneficiario</label>
+<label>👤 Beneficiario</label>
 <select id="beneficiario">
   <option>YO</option>
   <option>FAMILIA</option>
   <option>MASCOTAS</option>
-  <option>OTRO</option>
+  <option>OTROS</option>
 </select>
 
-<label>Lugar</label>
+<label>📍 Lugar</label>
 <select id="lugar">
   <option>CASA</option>
   <option>TRABAJO</option>
   <option>CALLE</option>
   <option>ONLINE</option>
-  <option>OTRO</option>
 </select>
 
-<label>Monto</label>
-<input type="number" id="monto" step="0.01" required>
+<label>💵 Monto</label>
+<input type="number" id="monto" step="0.01" min="0" value="0" required>
 
-<label>Medio de pago</label>
+<label>💳 Medio de pago</label>
 <select id="medioPago">
-  <option>Efectivo</option>
-  <option>Débito</option>
-  <option>Crédito</option>
-  <option>Transferencia</option>
+  <option>EFECTIVO</option>
+  <option>DEBITO</option>
+  <option>CREDITO</option>
+  <option>TRANSFERENCIA</option>
 </select>
 
-<label>Detalle</label>
+<label>📝 Detalle</label>
 <textarea id="detalle"></textarea>
 
-<label>Observación</label>
+<label>🗒️ Observacion</label>
 <textarea id="observacion"></textarea>
 
-<button type="submit">Guardar gasto</button>
+<button type="submit">Guardar</button>
 
 </form>
 </div>
@@ -125,20 +131,22 @@ button.secondary {
 
 <div class="card dashboard" id="dashboard"></div>
 
-<button class="secondary" onclick="exportar()">📤 Exportar a Excel</button>
+<button class="export" onclick="exportar()">📤 Exportar a Excel</button>
 
 </div>
 
 <script>
+const PRESUPUESTO_MENSUAL = 500;
+
 const categorias = {
-  "ALIMENTACION": ["SOCIAL","SUPERMERCADO","RESTAURANTE","GIMNASIO","CAFE"],
-  "TRANSPORTE": ["BUS","UBER","TAXI","TRICIMOTO"],
-  "SALUD": ["CONSULTAS","EXAMENES","MEDICAMENTOS","SUPLEMENTOS","ASEO PERSONAL","SKINCARE"],
-  "OCIO": ["CINE","VIAJES","SUBSCRIPCIONES"],
-  "SOCIAL": ["HOTEL","AIRBNB","PAGOS"],
-  "MASCOTAS": ["COMIDA","VETERINARIO","MEDICINA"],
-  "AUTO": ["REPUESTOS","ACEITE","LAVADA","LLANTAS","MECANICO","FILTROS"],
-  "OTROS": []
+  ALIMENTACION: ["SOCIAL","SUPERMERCADO","RESTAURANTE","GIMNASIO","CAFE"],
+  TRANSPORTE: ["BUS","UBER","TAXI","TRICIMOTO"],
+  SALUD: ["CONSULTAS","EXAMENES","MEDICAMENTOS","SUPLEMENTOS","ASEO PERSONAL","SKINCARE"],
+  OCIO: ["CINE","VIAJES","SUBSCRIPCIONES"],
+  SOCIAL: ["HOTEL","AIRBNB","PAGOS"],
+  MASCOTAS: ["COMIDA","VETERINARIO","MEDICINA"],
+  AUTO: ["REPUESTOS","ACEITE","LAVADA","LLANTAS","MECANICO","FILTROS"],
+  OTROS: []
 };
 
 const categoria = document.getElementById("categoria");
@@ -188,18 +196,31 @@ document.getElementById("formGasto").onsubmit = e => {
 
 function actualizarDashboard() {
   const gastos = JSON.parse(localStorage.getItem("gastos") || "[]");
+  const mesActual = new Date().toISOString().slice(0,7);
 
-  if (gastos.length === 0) {
-    dashboard.innerHTML = "No hay gastos registrados";
+  const delMes = gastos.filter(g => g.fecha.startsWith(mesActual));
+
+  if (delMes.length === 0) {
+    dashboard.innerHTML = "Sin gastos este mes";
     return;
   }
 
-  const total = gastos.reduce((s,g) => s + g.monto, 0);
+  let total = 0;
+  const porCategoria = {};
 
-  dashboard.innerHTML = `
-    <div><strong>Total:</strong> $${total.toFixed(2)}</div>
-    <div><strong>Registros:</strong> ${gastos.length}</div>
-  `;
+  delMes.forEach(g => {
+    total += g.monto;
+    porCategoria[g.categoria] = (porCategoria[g.categoria] || 0) + g.monto;
+  });
+
+  let html = `<div><strong>Total mes:</strong> $${total.toFixed(2)}</div>`;
+  html += `<div><strong>Uso presupuesto:</strong> ${((total / PRESUPUESTO_MENSUAL)*100).toFixed(1)}%</div><hr>`;
+
+  Object.keys(porCategoria).forEach(c => {
+    html += `<div>${c}: $${porCategoria[c].toFixed(2)}</div>`;
+  });
+
+  dashboard.innerHTML = html;
 }
 
 function exportar() {
