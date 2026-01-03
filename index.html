@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gastos Personales</title>
+<title>💸 Mis Gastos</title>
 
 <style>
 body {
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #f2f2f7;
-  margin: 0;
-  padding: 16px;
+  background:#f2f2f7;
+  margin:0;
+  padding:16px;
 }
 h1,h2 { text-align:center; }
 .card {
@@ -20,12 +20,8 @@ h1,h2 { text-align:center; }
   margin-bottom:16px;
   box-shadow:0 2px 8px rgba(0,0,0,.05);
 }
-label {
-  font-weight:600;
-  margin-top:12px;
-  display:block;
-}
-select, button {
+label { font-weight:600; margin-top:12px; display:block; }
+select,input,button {
   width:100%;
   padding:12px;
   font-size:16px;
@@ -41,7 +37,6 @@ button {
   border:none;
   margin-top:20px;
 }
-canvas { width:100%; height:220px; }
 .tab {
   display:flex;
   gap:10px;
@@ -56,20 +51,24 @@ canvas { width:100%; height:220px; }
   background:#007aff;
   color:white;
 }
+canvas { width:100%; height:220px; }
 </style>
 </head>
 
 <body>
 
-<h1>💸 Gastos</h1>
+<h1>💸 Mis Gastos</h1>
 
 <div class="tab">
-  <button onclick="mostrar('registro')" class="active">Registrar</button>
-  <button onclick="mostrar('dashboard')">Dashboard</button>
+  <button onclick="mostrar('registro')" class="active">📝 Registrar</button>
+  <button onclick="mostrar('dashboard')">📊 Dashboard</button>
 </div>
 
 <!-- REGISTRO -->
 <div id="registro" class="card">
+
+<label>📅 Fecha</label>
+<input type="date" id="fecha">
 
 <label>💵 Monto</label>
 <div class="monto">
@@ -103,30 +102,32 @@ canvas { width:100%; height:220px; }
   <option>Peigo</option><option>Online-Gye</option><option>Online-Peigo</option>
 </select>
 
-<button onclick="guardar()">Guardar gasto</button>
+<button onclick="guardar()">💾 Guardar gasto</button>
 </div>
 
 <!-- DASHBOARD -->
 <div id="dashboard" class="card" style="display:none">
-<h2>📊 Resumen del mes</h2>
+<h2>📊 Resumen</h2>
 <canvas id="grafico"></canvas>
 <div id="resumen"></div>
+<button onclick="exportar()">📤 Exportar a Excel</button>
 </div>
 
 <script>
-/* Monto */
+/* Inicial */
+fecha.value = new Date().toISOString().split("T")[0];
 for(let i=0;i<=500;i++) dolares.innerHTML+=`<option>${i}</option>`;
 for(let i=0;i<100;i++) centavos.innerHTML+=`<option>${i.toString().padStart(2,'0')}</option>`;
 
-/* Categorías y Subcategorías */
+/* Categorías */
 const categorias={
-"ALIMENTACIÓN":["Supermercado","Desayuno","Almuerzo","Cena","Snacks","Bebidas","Cumpleaños"],
-"TRANSPORTE":["Gasolina","Taxi","Bus","Mantenimiento","Repuestos","Peajes","Parqueo"],
-"SALUD":["Farmacia","Medicamentos","Consulta médica","Exámenes","Gimnasio","Hidratación","Suplementos"],
-"OCIO":["Streaming","Cine","Salidas","Viajes","Compras personales"],
-"SOCIAL":["Regalos","Cumpleaños","Invitaciones","Donaciones"],
-"MASCOTAS":["Comida","Veterinario","Higiene","Accesorios"],
-"HOGAR":["Compras hogar","Mantenimiento hogar","Agua","Luz"]
+"🍽️ ALIMENTACIÓN":["🛒 Supermercado","🍳 Desayuno","🍛 Almuerzo","🍽️ Cena","🍪 Snacks","🥤 Bebidas","🎂 Cumpleaños"],
+"🚗 TRANSPORTE":["⛽ Gasolina","🚕 Taxi","🚌 Bus","🛠️ Mantenimiento","🔩 Repuestos","🛣️ Peajes","🅿️ Parqueo"],
+"🩺 SALUD":["🏥 Farmacia","💊 Medicamentos","👨‍⚕️ Consulta médica","🧪 Exámenes","🏋️ Gimnasio","💧 Hidratación","🥛 Suplementos"],
+"🎉 OCIO":["📺 Streaming","🎬 Cine","🍻 Salidas","✈️ Viajes","🛍️ Compras personales"],
+"🎁 SOCIAL":["🎁 Regalos","🎂 Cumpleaños","🍽️ Invitaciones","❤️ Donaciones"],
+"🐾 MASCOTAS":["🍖 Comida","🐶 Veterinario","🧼 Higiene","🦴 Accesorios"],
+"🏠 HOGAR":["🧹 Compras hogar","🔧 Mantenimiento hogar","💧 Agua","💡 Luz"]
 };
 
 for(let c in categorias) categoria.innerHTML+=`<option>${c}</option>`;
@@ -147,12 +148,16 @@ function mostrar(v){
 
 /* Guardar */
 function guardar(){
+  const monto = parseFloat(`${dolares.value}.${centavos.value}`);
+  if(isNaN(monto) || monto<=0){ alert("Monto inválido"); return; }
+
   const g={
-    fecha:new Date().toISOString(),
-    monto:parseFloat(`${dolares.value}.${centavos.value}`),
+    fecha:fecha.value,
+    monto,
     categoria:categoria.value,
     subcategoria:subcategoria.value
   };
+
   const d=JSON.parse(localStorage.getItem("gastos")||"[]");
   d.push(g);
   localStorage.setItem("gastos",JSON.stringify(d));
@@ -163,20 +168,35 @@ function guardar(){
 function dibujar(){
   const data=JSON.parse(localStorage.getItem("gastos")||"[]");
   const tot={};
-  data.forEach(g=>tot[g.categoria]=(tot[g.categoria]||0)+g.monto);
+
+  data.forEach(g=>{
+    if(!isNaN(g.monto))
+      tot[g.categoria]=(tot[g.categoria]||0)+g.monto;
+  });
 
   const ctx=grafico.getContext("2d");
   ctx.clearRect(0,0,300,200);
+
   let x=20;
+  resumen.innerHTML="";
   for(let c in tot){
     ctx.fillStyle="#007aff";
     ctx.fillRect(x,200-tot[c]/5,30,tot[c]/5);
-    ctx.fillText(c,x,195);
+    resumen.innerHTML+=`<p>${c}: <b>$${tot[c].toFixed(2)}</b></p>`;
     x+=40;
   }
+}
 
-  resumen.innerHTML="";
-  for(let c in tot) resumen.innerHTML+=`<p><b>${c}</b>: $${tot[c].toFixed(2)}</p>`;
+/* Exportar */
+function exportar(){
+  const d=JSON.parse(localStorage.getItem("gastos")||"[]");
+  let csv="Fecha,Monto,Categoria,Subcategoria\n";
+  d.forEach(g=>csv+=`${g.fecha},${g.monto},${g.categoria},${g.subcategoria}\n`);
+  const blob=new Blob([csv],{type:"text/csv"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="gastos.csv";
+  a.click();
 }
 </script>
 
