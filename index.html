@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>💸 Mis Gastos</title>
+<title>💸 Control de Gastos</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -14,18 +14,13 @@ body {
   margin: 0;
   padding: 16px;
 }
-
-h1, h2 {
-  text-align: center;
-}
-
+h1, h2 { text-align: center; }
 .card {
   background: white;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: 14px;
   margin-bottom: 16px;
 }
-
 input, select, button {
   width: 100%;
   padding: 12px;
@@ -34,31 +29,33 @@ input, select, button {
   border: 1px solid #ccc;
   font-size: 16px;
 }
-
 button {
   background: #007aff;
   color: white;
   border: none;
   margin-top: 16px;
 }
-
 nav {
   display: flex;
   gap: 8px;
   margin-bottom: 16px;
 }
+nav button { flex: 1; }
+.hidden { display: none; }
 
-nav button {
-  flex: 1;
+.progress {
+  height: 14px;
+  background: #e5e5ea;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 6px;
 }
-
-.hidden {
-  display: none;
+.progress-bar {
+  height: 100%;
+  background: #34c759;
 }
-
-canvas {
-  margin-top: 24px;
-}
+.progress-bar.warn { background: #ff9f0a; }
+.progress-bar.danger { background: #ff3b30; }
 </style>
 </head>
 
@@ -68,14 +65,14 @@ canvas {
 
 <nav>
   <button onclick="mostrar('registro')">➕ Registrar</button>
-  <button id="btnDashboard" onclick="mostrar('dashboard')">📊 Dashboard</button>
+  <button onclick="mostrar('dashboard')">📊 Dashboard</button>
+  <button onclick="mostrar('presupuestos')">🎯 Presupuestos</button>
 </nav>
 
 <!-- REGISTRO -->
 <section id="registro" class="card">
   <h2>➕ Nuevo gasto</h2>
 
-  <label>📅 Fecha</label>
   <input type="date" id="fecha">
 
   <label>💵 Dólares</label>
@@ -93,8 +90,15 @@ canvas {
   <label>📍 Lugar</label>
   <select id="lugar"></select>
 
+  <label>💳 Medio de pago</label>
+  <select id="medioPago"></select>
+
   <label>👤 Beneficiario</label>
-  <input id="beneficiario" placeholder="Ej: Yo, Familia, Mascota">
+  <select id="beneficiario">
+    <option>Yo</option>
+    <option>Familia</option>
+    <option>Otros</option>
+  </select>
 
   <button onclick="guardarGasto()">💾 Guardar</button>
 </section>
@@ -103,135 +107,170 @@ canvas {
 <section id="dashboard" class="hidden">
   <div class="card">
     <h2>📊 Dashboard</h2>
-    <h3>Total gastado</h3>
     <p id="totalGastado">$0.00</p>
-  </div>
-
-  <div class="card">
-    <h3>Por categoría</h3>
     <canvas id="chartCategorias"></canvas>
   </div>
+</section>
 
+<!-- PRESUPUESTOS -->
+<section id="presupuestos" class="hidden">
   <div class="card">
-    <h3>Por día</h3>
-    <canvas id="chartDias"></canvas>
+    <h2>🎯 Presupuestos mensuales</h2>
+    <div id="listaPresupuestos"></div>
   </div>
-
-  <button onclick="exportarExcel()">📤 Exportar a Excel</button>
 </section>
 
 <script>
-/* DATOS BASE */
+/* ==========================
+   DATOS DEFINITIVOS
+========================== */
+
 const categorias = {
-  "🍽 Alimentación": ["Supermercado", "Restaurante", "Café"],
-  "🚗 Transporte": ["Gasolina", "Uber", "Bus"],
-  "🏥 Salud": ["Medicamentos", "Exámenes", "Consultas"],
-  "🎉 Ocio": ["Cine", "Viajes", "Suscripciones"],
-  "🐶 Mascotas": ["Comida", "Veterinario"],
-  "👥 Social": ["Regalos", "Salidas"],
-  "🚘 Auto": ["Repuestos", "Mantenimiento"]
+  "🍽 ALIMENTACIÓN": ["Supermercado","Restaurante","Café"],
+  "🚗 TRANSPORTE": ["Gasolina","Uber/Taxi","Bus","Mantenimientos"],
+  "🏥 SALUD": ["Medicamentos","Exámenes","Consultas"],
+  "🎉 OCIO": ["Cine","Viajes","Suscripciones"],
+  "👥 SOCIAL": ["Regalos","Cumpleaños","Salidas"],
+  "🐶 MASCOTAS": ["Comida","Veterinario"],
+  "🚘 AUTO": ["Repuestos","Mantenimiento"]
 };
 
-const lugares = ["Supermercado", "Farmacia", "Gasolinera", "Online", "Otro"];
+const lugares = [
+  "Farmacia","Gasolinera","Supermercado","Tienda casa",
+  "Restaurante","Cafetería","Veterinaria","Taller","Otro"
+];
 
-/* INICIALIZACIÓN */
+const mediosPago = [
+  "💵 Efectivo","💳 Tarjeta","📱 Peigo","🌐 Online-Gye","🌐 Online-Peigo"
+];
+
+/* ==========================
+   INIT
+========================== */
+
 function init() {
-  const hoy = new Date().toISOString().split("T")[0];
-  fecha.value = hoy;
+  fecha.value = new Date().toISOString().split("T")[0];
 
-  for (let i = 0; i <= 500; i++) {
+  for (let i = 0; i <= 500; i++)
     dolares.innerHTML += `<option>${i}</option>`;
-  }
-  for (let i = 0; i < 100; i++) {
-    centavos.innerHTML += `<option>${i.toString().padStart(2,'0')}</option>`;
-  }
 
-  for (let c in categorias) {
+  for (let i = 0; i < 100; i++)
+    centavos.innerHTML += `<option>${i.toString().padStart(2,'0')}</option>`;
+
+  for (let c in categorias)
     categoria.innerHTML += `<option>${c}</option>`;
-  }
 
   lugares.forEach(l => lugar.innerHTML += `<option>${l}</option>`);
+  mediosPago.forEach(m => medioPago.innerHTML += `<option>${m}</option>`);
 
   cargarSubcategorias();
+  cargarPresupuestos();
 }
 init();
 
-/* SUBCATEGORÍAS */
-function cargarSubcategorias() {
+/* ==========================
+   REGISTRO
+========================== */
+
+function cargarSubcategorias(){
   subcategoria.innerHTML = "";
-  categorias[categoria.value].forEach(sc => {
-    subcategoria.innerHTML += `<option>${sc}</option>`;
-  });
+  categorias[categoria.value].forEach(s =>
+    subcategoria.innerHTML += `<option>${s}</option>`
+  );
 }
 
-/* GUARDAR */
-function guardarGasto() {
+function guardarGasto(){
   const gasto = {
     fecha: fecha.value,
-    monto: parseFloat(dolares.value) + parseFloat("0." + centavos.value),
+    monto: +dolares.value + +("0."+centavos.value),
     categoria: categoria.value,
     subcategoria: subcategoria.value,
     lugar: lugar.value,
-    beneficiario: beneficiario.value || "N/A"
+    medioPago: medioPago.value,
+    beneficiario: beneficiario.value
   };
 
-  const gastos = JSON.parse(localStorage.getItem("gastos")) || [];
+  const gastos = JSON.parse(localStorage.getItem("gastos") || "[]");
   gastos.push(gasto);
   localStorage.setItem("gastos", JSON.stringify(gastos));
 
   alert("✅ Gasto guardado");
 }
 
-/* NAVEGACIÓN */
-function mostrar(id) {
-  registro.classList.add("hidden");
-  dashboard.classList.add("hidden");
+/* ==========================
+   NAVEGACIÓN
+========================== */
+
+function mostrar(id){
+  ["registro","dashboard","presupuestos"].forEach(s =>
+    document.getElementById(s).classList.add("hidden")
+  );
   document.getElementById(id).classList.remove("hidden");
+
+  if (id === "dashboard") actualizarDashboard();
+  if (id === "presupuestos") cargarPresupuestos();
 }
 
-/* DASHBOARD */
-function actualizarDashboard() {
-  const gastos = JSON.parse(localStorage.getItem("gastos")) || [];
-  if (gastos.length === 0) return;
+/* ==========================
+   DASHBOARD
+========================== */
 
-  const total = gastos.reduce((s, g) => s + g.monto, 0);
+function actualizarDashboard(){
+  const gastos = JSON.parse(localStorage.getItem("gastos") || "[]");
+  const total = gastos.reduce((a,b)=>a+b.monto,0);
   totalGastado.innerText = "$" + total.toFixed(2);
 
   const porCategoria = {};
-  const porDia = {};
-
-  gastos.forEach(g => {
-    porCategoria[g.categoria] = (porCategoria[g.categoria] || 0) + g.monto;
-    porDia[g.fecha] = (porDia[g.fecha] || 0) + g.monto;
-  });
+  gastos.forEach(g =>
+    porCategoria[g.categoria] = (porCategoria[g.categoria] || 0) + g.monto
+  );
 
   new Chart(chartCategorias, {
     type: "pie",
-    data: { labels: Object.keys(porCategoria), datasets: [{ data: Object.values(porCategoria) }] }
-  });
-
-  new Chart(chartDias, {
-    type: "line",
-    data: { labels: Object.keys(porDia), datasets: [{ label: "Gasto diario", data: Object.values(porDia) }] }
+    data: {
+      labels: Object.keys(porCategoria),
+      datasets: [{ data: Object.values(porCategoria) }]
+    }
   });
 }
 
-btnDashboard.addEventListener("click", actualizarDashboard);
+/* ==========================
+   PRESUPUESTOS
+========================== */
 
-/* EXPORTAR */
-function exportarExcel() {
-  const gastos = JSON.parse(localStorage.getItem("gastos")) || [];
-  let csv = "Fecha,Categoría,Subcategoría,Lugar,Beneficiario,Monto\n";
+function cargarPresupuestos(){
+  const presup = JSON.parse(localStorage.getItem("presupuestos") || "{}");
+  const gastos = JSON.parse(localStorage.getItem("gastos") || "[]");
+  listaPresupuestos.innerHTML = "";
 
-  gastos.forEach(g => {
-    csv += `${g.fecha},${g.categoria},${g.subcategoria},${g.lugar},${g.beneficiario},${g.monto}\n`;
-  });
+  for (let c in categorias) {
+    if (!presup[c]) presup[c] = 0;
 
-  const blob = new Blob([csv], { type: "text/csv" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "gastos.csv";
-  a.click();
+    const gastado = gastos
+      .filter(g => g.categoria === c)
+      .reduce((a,b)=>a+b.monto,0);
+
+    const pct = presup[c] ? Math.min(gastado / presup[c] * 100, 100) : 0;
+    let clase = pct > 90 ? "danger" : pct > 70 ? "warn" : "";
+
+    listaPresupuestos.innerHTML += `
+      <div style="margin-bottom:14px">
+        <strong>${c}</strong>
+        <input type="number" value="${presup[c]}"
+          onchange="guardarPresupuesto('${c}',this.value)">
+        <div class="progress">
+          <div class="progress-bar ${clase}" style="width:${pct}%"></div>
+        </div>
+        <small>$${gastado.toFixed(2)} / $${presup[c]}</small>
+      </div>
+    `;
+  }
+}
+
+function guardarPresupuesto(cat,val){
+  const p = JSON.parse(localStorage.getItem("presupuestos") || "{}");
+  p[cat] = +val;
+  localStorage.setItem("presupuestos", JSON.stringify(p));
 }
 </script>
 
