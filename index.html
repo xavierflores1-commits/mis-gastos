@@ -2,276 +2,178 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>💸 Control de Gastos</title>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+<title>Control de Gastos</title>
 <style>
 body {
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #f2f2f7;
-  margin: 0;
-  padding: 16px;
+  font-family: Arial, sans-serif;
+  background: #f5f5f5;
+  padding: 20px;
 }
-h1, h2 { text-align: center; }
-.card {
+h2 {
+  margin-top: 30px;
+}
+form, .dashboard {
   background: white;
-  padding: 16px;
-  border-radius: 14px;
-  margin-bottom: 16px;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
 }
-input, select, button {
+label {
+  display: block;
+  margin-top: 10px;
+  font-weight: bold;
+}
+input, select, textarea, button {
   width: 100%;
-  padding: 12px;
-  margin-top: 8px;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-  font-size: 16px;
+  padding: 6px;
+  margin-top: 4px;
+}
+textarea {
+  resize: vertical;
 }
 button {
-  background: #007aff;
+  margin-top: 15px;
+  background: #2e86de;
   color: white;
   border: none;
-  margin-top: 16px;
+  cursor: pointer;
 }
-nav {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
+button:hover {
+  background: #1b4f72;
 }
-nav button { flex: 1; }
-.hidden { display: none; }
-
-.progress {
-  height: 14px;
-  background: #e5e5ea;
-  border-radius: 10px;
-  overflow: hidden;
-  margin-top: 6px;
+.dashboard div {
+  margin: 6px 0;
+  font-size: 16px;
 }
-.progress-bar {
-  height: 100%;
-  background: #34c759;
-}
-.progress-bar.warn { background: #ff9f0a; }
-.progress-bar.danger { background: #ff3b30; }
 </style>
 </head>
 
 <body>
 
-<h1>💸 Control de Gastos</h1>
+<h2>📌 Registro de Gastos</h2>
 
-<nav>
-  <button onclick="mostrar('registro')">➕ Registrar</button>
-  <button onclick="mostrar('dashboard')">📊 Dashboard</button>
-  <button onclick="mostrar('presupuestos')">🎯 Presupuestos</button>
-</nav>
+<form id="formGasto">
 
-<!-- REGISTRO -->
-<section id="registro" class="card">
-  <h2>➕ Nuevo gasto</h2>
+<label>Fecha</label>
+<input type="date" id="fecha" required>
 
-  <input type="date" id="fecha">
+<label>Categoría</label>
+<select id="categoria" required></select>
 
-  <label>💵 Dólares</label>
-  <select id="dolares"></select>
+<label>Subcategoría</label>
+<select id="subcategoria"></select>
 
-  <label>🪙 Centavos</label>
-  <select id="centavos"></select>
+<label>Beneficiario</label>
+<input type="text" id="beneficiario">
 
-  <label>📂 Categoría</label>
-  <select id="categoria" onchange="cargarSubcategorias()"></select>
+<label>Lugar</label>
+<input type="text" id="lugar">
 
-  <label>📁 Subcategoría</label>
-  <select id="subcategoria"></select>
+<label>Monto</label>
+<input type="number" id="monto" step="0.01" required>
 
-  <label>📍 Lugar</label>
-  <select id="lugar"></select>
+<label>Medio de pago</label>
+<select id="medioPago">
+  <option>Efectivo</option>
+  <option>Débito</option>
+  <option>Crédito</option>
+  <option>Transferencia</option>
+</select>
 
-  <label>💳 Medio de pago</label>
-  <select id="medioPago"></select>
+<label>Detalle</label>
+<textarea id="detalle"></textarea>
 
-  <label>👤 Beneficiario</label>
-  <select id="beneficiario">
-    <option>Yo</option>
-    <option>Familia</option>
-    <option>Otros</option>
-  </select>
+<label>Observación</label>
+<textarea id="observacion"></textarea>
 
-  <button onclick="guardarGasto()">💾 Guardar</button>
-</section>
+<button type="submit">Guardar gasto</button>
+</form>
 
-<!-- DASHBOARD -->
-<section id="dashboard" class="hidden">
-  <div class="card">
-    <h2>📊 Dashboard</h2>
-    <p id="totalGastado">$0.00</p>
-    <canvas id="chartCategorias"></canvas>
-  </div>
-</section>
-
-<!-- PRESUPUESTOS -->
-<section id="presupuestos" class="hidden">
-  <div class="card">
-    <h2>🎯 Presupuestos mensuales</h2>
-    <div id="listaPresupuestos"></div>
-  </div>
-</section>
+<h2>📊 Dashboard</h2>
+<div class="dashboard" id="dashboard"></div>
 
 <script>
-/* ==========================
-   DATOS DEFINITIVOS
-========================== */
-
 const categorias = {
-  "🍽 ALIMENTACIÓN": ["Supermercado","Restaurante","Café"],
-  "🚗 TRANSPORTE": ["Gasolina","Uber/Taxi","Bus","Mantenimientos"],
-  "🏥 SALUD": ["Medicamentos","Exámenes","Consultas"],
-  "🎉 OCIO": ["Cine","Viajes","Suscripciones"],
-  "👥 SOCIAL": ["Regalos","Cumpleaños","Salidas"],
-  "🐶 MASCOTAS": ["Comida","Veterinario"],
-  "🚘 AUTO": ["Repuestos","Mantenimiento"]
+  "ALIMENTACION": ["SOCIAL","SUPERMERCADO","RESTAURANTE","GIMNASIO","CAFE"],
+  "TRANSPORTE": ["BUS","UBER","TAXI","TRICIMOTO"],
+  "SALUD": ["CONSULTAS","EXAMENES","MEDICAMENTOS","SUPLEMENTOS","ASEO PERSONAL","SKINCARE"],
+  "OCIO": ["CINE","VIAJES","SUBSCRIPCIONES"],
+  "SOCIAL": ["HOTEL","AIRBNB","PAGOS"],
+  "MASCOTAS": ["COMIDA","VETERINARIO","MEDICINA"],
+  "AUTO": ["REPUESTOS","ACEITE","LAVADA","LLANTAS","MECANICO","FILTROS"],
+  "OTROS": []
 };
 
-const lugares = [
-  "Farmacia","Gasolinera","Supermercado","Tienda casa",
-  "Restaurante","Cafetería","Veterinaria","Taller","Otro"
-];
+const categoriaSelect = document.getElementById("categoria");
+const subcategoriaSelect = document.getElementById("subcategoria");
+const dashboard = document.getElementById("dashboard");
 
-const mediosPago = [
-  "💵 Efectivo","💳 Tarjeta","📱 Peigo","🌐 Online-Gye","🌐 Online-Peigo"
-];
-
-/* ==========================
-   INIT
-========================== */
-
-function init() {
-  fecha.value = new Date().toISOString().split("T")[0];
-
-  for (let i = 0; i <= 500; i++)
-    dolares.innerHTML += `<option>${i}</option>`;
-
-  for (let i = 0; i < 100; i++)
-    centavos.innerHTML += `<option>${i.toString().padStart(2,'0')}</option>`;
-
-  for (let c in categorias)
-    categoria.innerHTML += `<option>${c}</option>`;
-
-  lugares.forEach(l => lugar.innerHTML += `<option>${l}</option>`);
-  mediosPago.forEach(m => medioPago.innerHTML += `<option>${m}</option>`);
-
-  cargarSubcategorias();
-  cargarPresupuestos();
-}
-init();
-
-/* ==========================
-   REGISTRO
-========================== */
-
-function cargarSubcategorias(){
-  subcategoria.innerHTML = "";
-  categorias[categoria.value].forEach(s =>
-    subcategoria.innerHTML += `<option>${s}</option>`
-  );
+function cargarCategorias() {
+  categoriaSelect.innerHTML = "";
+  Object.keys(categorias).forEach(cat => {
+    const opt = document.createElement("option");
+    opt.value = cat;
+    opt.textContent = cat;
+    categoriaSelect.appendChild(opt);
+  });
+  actualizarSubcategorias();
 }
 
-function guardarGasto(){
+function actualizarSubcategorias() {
+  const cat = categoriaSelect.value;
+  subcategoriaSelect.innerHTML = "";
+  categorias[cat].forEach(sub => {
+    const opt = document.createElement("option");
+    opt.value = sub;
+    opt.textContent = sub;
+    subcategoriaSelect.appendChild(opt);
+  });
+}
+
+categoriaSelect.addEventListener("change", actualizarSubcategorias);
+
+document.getElementById("formGasto").addEventListener("submit", e => {
+  e.preventDefault();
+
   const gasto = {
     fecha: fecha.value,
-    monto: +dolares.value + +("0."+centavos.value),
-    categoria: categoria.value,
-    subcategoria: subcategoria.value,
+    categoria: categoriaSelect.value,
+    subcategoria: subcategoriaSelect.value,
+    beneficiario: beneficiario.value,
     lugar: lugar.value,
+    monto: parseFloat(monto.value),
     medioPago: medioPago.value,
-    beneficiario: beneficiario.value
+    detalle: detalle.value,
+    observacion: observacion.value
   };
 
   const gastos = JSON.parse(localStorage.getItem("gastos") || "[]");
   gastos.push(gasto);
   localStorage.setItem("gastos", JSON.stringify(gastos));
 
-  alert("✅ Gasto guardado");
-}
+  e.target.reset();
+  cargarCategorias();
+  actualizarDashboard();
+});
 
-/* ==========================
-   NAVEGACIÓN
-========================== */
-
-function mostrar(id){
-  ["registro","dashboard","presupuestos"].forEach(s =>
-    document.getElementById(s).classList.add("hidden")
-  );
-  document.getElementById(id).classList.remove("hidden");
-
-  if (id === "dashboard") actualizarDashboard();
-  if (id === "presupuestos") cargarPresupuestos();
-}
-
-/* ==========================
-   DASHBOARD
-========================== */
-
-function actualizarDashboard(){
+function actualizarDashboard() {
   const gastos = JSON.parse(localStorage.getItem("gastos") || "[]");
-  const total = gastos.reduce((a,b)=>a+b.monto,0);
-  totalGastado.innerText = "$" + total.toFixed(2);
-
-  const porCategoria = {};
-  gastos.forEach(g =>
-    porCategoria[g.categoria] = (porCategoria[g.categoria] || 0) + g.monto
-  );
-
-  new Chart(chartCategorias, {
-    type: "pie",
-    data: {
-      labels: Object.keys(porCategoria),
-      datasets: [{ data: Object.values(porCategoria) }]
-    }
-  });
-}
-
-/* ==========================
-   PRESUPUESTOS
-========================== */
-
-function cargarPresupuestos(){
-  const presup = JSON.parse(localStorage.getItem("presupuestos") || "{}");
-  const gastos = JSON.parse(localStorage.getItem("gastos") || "[]");
-  listaPresupuestos.innerHTML = "";
-
-  for (let c in categorias) {
-    if (!presup[c]) presup[c] = 0;
-
-    const gastado = gastos
-      .filter(g => g.categoria === c)
-      .reduce((a,b)=>a+b.monto,0);
-
-    const pct = presup[c] ? Math.min(gastado / presup[c] * 100, 100) : 0;
-    let clase = pct > 90 ? "danger" : pct > 70 ? "warn" : "";
-
-    listaPresupuestos.innerHTML += `
-      <div style="margin-bottom:14px">
-        <strong>${c}</strong>
-        <input type="number" value="${presup[c]}"
-          onchange="guardarPresupuesto('${c}',this.value)">
-        <div class="progress">
-          <div class="progress-bar ${clase}" style="width:${pct}%"></div>
-        </div>
-        <small>$${gastado.toFixed(2)} / $${presup[c]}</small>
-      </div>
-    `;
+  if (gastos.length === 0) {
+    dashboard.innerHTML = "<em>No hay gastos registrados</em>";
+    return;
   }
+
+  let total = 0;
+  gastos.forEach(g => total += g.monto);
+
+  dashboard.innerHTML = `
+    <div><strong>Total de gastos:</strong> $${total.toFixed(2)}</div>
+    <div><strong>Registros:</strong> ${gastos.length}</div>
+  `;
 }
 
-function guardarPresupuesto(cat,val){
-  const p = JSON.parse(localStorage.getItem("presupuestos") || "{}");
-  p[cat] = +val;
-  localStorage.setItem("presupuestos", JSON.stringify(p));
-}
+cargarCategorias();
+actualizarDashboard();
 </script>
 
 </body>
