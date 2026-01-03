@@ -305,11 +305,12 @@ function actualizarDashboard() {
   let html = `<div class="total">💰 Total mes: $${total.toFixed(2)}</div>`;
   html += `<div class="uso-general">📈 Uso presupuesto total: ${((total/totalPresupuesto)*100).toFixed(1)}%</div><hr>`;
 
-  // Suma por categoria con barras de progreso
-  Object.keys(porCategoria).forEach(c=>{
-    const pct=((porCategoria[c]/PRESUPUESTOS[c])*100);
+  // Suma por todas las categorias con barras de progreso
+  Object.keys(PRESUPUESTOS).forEach(c=>{
+    const gastoCat = porCategoria[c] || 0;
+    const pct=((gastoCat/PRESUPUESTOS[c])*100);
     const pctDisplay=pct.toFixed(1);
-    html+=`<div class="categoria">${c}: $${porCategoria[c].toFixed(2)} / $${PRESUPUESTOS[c]} (${pctDisplay}%)</div>`;
+    html+=`<div class="categoria">${c}: $${gastoCat.toFixed(2)} / $${PRESUPUESTOS[c]} (${pctDisplay}%)</div>`;
     html+=`<div class="progress-bar"><div class="progress-fill" style="width:${Math.min(pct,100)}%"></div></div>`;
   });
 
