@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gastos</title>
+<title>💸 Gastos</title>
 
 <style>
 body {
   margin: 0;
   font-family: system-ui, Arial, sans-serif;
-  background: #f4f6f8;
+  background: #eceff1;
   font-size: 18px;
   color: #222;
 }
 
 .container {
-  max-width: 420px;
+  max-width: 450px;
   margin: auto;
   padding: 14px;
 }
@@ -23,14 +23,15 @@ body {
 h2 {
   text-align: center;
   margin-bottom: 10px;
+  font-size: 24px;
 }
 
 .card {
   background: #ffffff;
-  padding: 14px;
+  padding: 16px;
   border-radius: 12px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  margin-bottom: 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 label {
@@ -44,10 +45,9 @@ input, select, textarea, button {
   padding: 10px;
   margin-top: 6px;
   font-size: 17px;
-}
-
-input[type=number] {
-  text-align: center;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
 }
 
 textarea {
@@ -58,16 +58,30 @@ button {
   background: #2c3e50;
   color: white;
   border: none;
-  border-radius: 10px;
   margin-top: 16px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  background: #1b2838;
 }
 
 button.export {
   background: #27ae60;
 }
 
+button.export:hover {
+  background: #1f8f4c;
+}
+
 .dashboard div {
   margin: 6px 0;
+}
+
+.monto-container {
+  display: flex;
+  gap: 8px;
 }
 </style>
 </head>
@@ -75,7 +89,7 @@ button.export {
 <body>
 <div class="container">
 
-<h2>🧾 Registro</h2>
+<h2>💸 Registro de Gastos</h2>
 
 <div class="card">
 <form id="formGasto">
@@ -83,10 +97,10 @@ button.export {
 <label>📅 Fecha</label>
 <input type="date" id="fecha" required>
 
-<label>📂 Categoria</label>
+<label>📂 Categoría</label>
 <select id="categoria"></select>
 
-<label>📁 Subcategoria</label>
+<label>📁 Subcategoría</label>
 <select id="subcategoria"></select>
 
 <label>👤 Beneficiario</label>
@@ -100,26 +114,31 @@ button.export {
 <label>📍 Lugar</label>
 <select id="lugar">
   <option>CASA</option>
-  <option>TRABAJO</option>
   <option>CALLE</option>
+  <option>TRABAJO</option>
   <option>ONLINE</option>
 </select>
 
 <label>💵 Monto</label>
-<input type="number" id="monto" step="0.01" min="0" value="0" required>
+<div class="monto-container">
+  <select id="montoDolar"></select>
+  <select id="montoCentavo"></select>
+</div>
 
 <label>💳 Medio de pago</label>
 <select id="medioPago">
   <option>EFECTIVO</option>
-  <option>DEBITO</option>
-  <option>CREDITO</option>
   <option>TRANSFERENCIA</option>
+  <option>ONLINE GYE</option>
+  <option>ONLINE PEIGO</option>
+  <option>DEBITO GYE</option>
+  <option>CREDITO JEP</option>
 </select>
 
 <label>📝 Detalle</label>
 <textarea id="detalle"></textarea>
 
-<label>🗒️ Observacion</label>
+<label>🗒️ Observación</label>
 <textarea id="observacion"></textarea>
 
 <button type="submit">Guardar</button>
@@ -128,31 +147,50 @@ button.export {
 </div>
 
 <h2>📊 Dashboard</h2>
-
 <div class="card dashboard" id="dashboard"></div>
 
 <button class="export" onclick="exportar()">📤 Exportar a Excel</button>
-
 </div>
 
 <script>
-const PRESUPUESTO_MENSUAL = 500;
-
-const categorias = {
-  ALIMENTACION: ["SOCIAL","SUPERMERCADO","RESTAURANTE","GIMNASIO","CAFE"],
-  TRANSPORTE: ["BUS","UBER","TAXI","TRICIMOTO"],
-  SALUD: ["CONSULTAS","EXAMENES","MEDICAMENTOS","SUPLEMENTOS","ASEO PERSONAL","SKINCARE"],
-  OCIO: ["CINE","VIAJES","SUBSCRIPCIONES"],
-  SOCIAL: ["HOTEL","AIRBNB","PAGOS"],
-  MASCOTAS: ["COMIDA","VETERINARIO","MEDICINA"],
-  AUTO: ["REPUESTOS","ACEITE","LAVADA","LLANTAS","MECANICO","FILTROS"],
-  OTROS: []
+// 💰 Presupuestos por categoría
+const PRESUPUESTOS = {
+  ALIMENTACION: 330,
+  TRANSPORTE: 290,
+  SALUD: 90,
+  OCIO: 15,
+  SOCIAL: 50,
+  MASCOTAS: 40,
+  AUTO: 50,
+  HOGAR: 75,
+  DEUDAS: 70
 };
 
+// 🏷️ Categorías con emojis
+const categorias = {
+  ALIMENTACION: ["SOCIAL 🍻","SUPERMERCADO 🛒","RESTAURANTE 🍽️","GIMNASIO 🏋️","CAFE ☕","TIENDA 🏪"],
+  TRANSPORTE: ["GASOLINA ⛽","BUS 🚌","UBER 🚗","TAXI 🚕","TRICIMOTO 🛵","ESTACIONAMIENTO 🅿️","GARAGE 🏠"],
+  SALUD: ["CONSULTAS 🩺","EXAMENES 🧪","MEDICAMENTOS 💊","SUPLEMENTOS 🥤","ASEO PERSONAL 🧴","SKINCARE 🧼"],
+  OCIO: ["VIAJES ✈️","SUBSCRIPCIONES 📱","FUN 🔥"],
+  SOCIAL: ["HOTEL 🏨","AIRBNB 🏠","PAGOS 💳"],
+  MASCOTAS: ["COMIDA 🐶","VETERINARIO 🐾","MEDICINA 🐕"],
+  AUTO: ["REPUESTOS 🛠️","ACEITE 🛢️","LAVADA 🚿","LLANTAS 🛞","MECANICO 🔧","FILTROS 🧰"],
+  HOGAR: ["INTERNET 🌐","LUZ 💡","AGUA 💧"],
+  DEUDAS: ["DEPRATI 🛍️","JEP 🏦","CLARO 📱","ICLOUD ☁️","ETAFASHION 👗"]
+};
+
+// 🏗️ Elementos del DOM
 const categoria = document.getElementById("categoria");
 const subcategoria = document.getElementById("subcategoria");
 const dashboard = document.getElementById("dashboard");
+const montoDolar = document.getElementById("montoDolar");
+const montoCentavo = document.getElementById("montoCentavo");
 
+// 💵 Llenar selects de monto tipo iPhone
+for(let i=0;i<=1000;i++) montoDolar.innerHTML += `<option>${i}</option>`;
+for(let i=0;i<100;i++) montoCentavo.innerHTML += `<option>${i}</option>`;
+
+// 🗂️ Cargar categorías
 function cargarCategorias() {
   categoria.innerHTML = "";
   Object.keys(categorias).forEach(c => {
@@ -161,6 +199,7 @@ function cargarCategorias() {
   actualizarSub();
 }
 
+// 🔄 Actualizar subcategorías según categoría
 function actualizarSub() {
   subcategoria.innerHTML = "";
   categorias[categoria.value].forEach(s => {
@@ -170,6 +209,7 @@ function actualizarSub() {
 
 categoria.onchange = actualizarSub;
 
+// 📝 Guardar gasto
 document.getElementById("formGasto").onsubmit = e => {
   e.preventDefault();
 
@@ -179,7 +219,7 @@ document.getElementById("formGasto").onsubmit = e => {
     subcategoria: subcategoria.value,
     beneficiario: beneficiario.value,
     lugar: lugar.value,
-    monto: Number(monto.value),
+    monto: Number(montoDolar.value) + Number(montoCentavo.value)/100,
     medioPago: medioPago.value,
     detalle: detalle.value,
     observacion: observacion.value
@@ -194,10 +234,10 @@ document.getElementById("formGasto").onsubmit = e => {
   actualizarDashboard();
 };
 
+// 📊 Dashboard con % de presupuesto por categoría
 function actualizarDashboard() {
   const gastos = JSON.parse(localStorage.getItem("gastos") || "[]");
   const mesActual = new Date().toISOString().slice(0,7);
-
   const delMes = gastos.filter(g => g.fecha.startsWith(mesActual));
 
   if (delMes.length === 0) {
@@ -214,15 +254,18 @@ function actualizarDashboard() {
   });
 
   let html = `<div><strong>Total mes:</strong> $${total.toFixed(2)}</div>`;
-  html += `<div><strong>Uso presupuesto:</strong> ${((total / PRESUPUESTO_MENSUAL)*100).toFixed(1)}%</div><hr>`;
+  const totalPresupuesto = Object.values(PRESUPUESTOS).reduce((a,b)=>a+b,0);
+  html += `<div><strong>Uso presupuesto total:</strong> ${((total/totalPresupuesto)*100).toFixed(1)}%</div><hr>`;
 
   Object.keys(porCategoria).forEach(c => {
-    html += `<div>${c}: $${porCategoria[c].toFixed(2)}</div>`;
+    const pct = ((porCategoria[c]/PRESUPUESTOS[c])*100).toFixed(1);
+    html += `<div>${c}: $${porCategoria[c].toFixed(2)} / $${PRESUPUESTOS[c]} (${pct}%)</div>`;
   });
 
   dashboard.innerHTML = html;
 }
 
+// 📤 Exportar a CSV
 function exportar() {
   const gastos = JSON.parse(localStorage.getItem("gastos") || "[]");
   if (!gastos.length) return;
@@ -239,8 +282,10 @@ function exportar() {
   a.click();
 }
 
+// 🔹 Inicialización
 cargarCategorias();
 actualizarDashboard();
+
 </script>
 
 </body>
