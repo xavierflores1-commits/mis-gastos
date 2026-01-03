@@ -3,209 +3,164 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mis Gastos</title>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>Registro de Gastos</title>
 
 <style>
-:root {
-  --bg:#f2f2f7;
-  --card:#fff;
-  --border:#e5e5ea;
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f2f2f7;
+  margin: 0;
+  padding: 16px;
 }
 
-*{box-sizing:border-box}
-
-body{
-  margin:0;
-  font-family:-apple-system,BlinkSystemFont,sans-serif;
-  background:var(--bg);
+h1 {
+  text-align: center;
 }
 
-header{
-  display:flex;
-  justify-content:space-around;
-  background:var(--card);
-  border-bottom:1px solid var(--border);
-  padding:10px 0;
+.card {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
-header button{
-  background:none;
-  border:none;
-  font-size:18px;
+label {
+  font-weight: 600;
+  margin-top: 12px;
+  display: block;
 }
 
-section{display:none;padding:14px}
-section.active{display:block}
-
-.card{
-  background:var(--card);
-  border-radius:14px;
-  padding:14px;
-  margin-bottom:14px;
-  box-shadow:0 1px 4px rgba(0,0,0,.05);
+select, button {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  margin-top: 6px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
 }
 
-label{
-  font-size:13px;
-  color:#666;
-  margin-top:10px;
-  display:block;
+.monto {
+  display: flex;
+  gap: 10px;
 }
 
-select,button{
-  width:100%;
-  padding:12px;
-  font-size:16px;
-  border-radius:12px;
-  border:1px solid var(--border);
-  margin-top:6px;
+.monto select {
+  flex: 1;
 }
 
-.amount{display:flex;gap:8px}
-.amount select{flex:1}
-
-button.primary{
-  background:#007aff;
-  color:#fff;
-  border:none;
-  font-weight:600;
+button {
+  background: #007aff;
+  color: white;
+  border: none;
+  margin-top: 20px;
 }
 
-.total{
-  font-size:28px;
-  font-weight:700;
-  text-align:center;
+button:active {
+  background: #005fcc;
 }
 </style>
 </head>
 
 <body>
 
-<header>
-  <button onclick="show('add')">➕</button>
-  <button onclick="show('dash')">📊</button>
-  <button onclick="show('data')">📁</button>
-</header>
+<h1>💸 Nuevo Gasto</h1>
 
-<section id="add" class="active">
 <div class="card">
 
-<label>📂 Categoría</label>
-<select id="category" onchange="loadSub()">
-<option value="">Selecciona</option>
-<option value="ALIMENTACION">🍽️ ALIMENTACIÓN</option>
-<option value="TRANSPORTE">🚗 TRANSPORTE</option>
-<option value="SALUD">💊 SALUD</option>
-<option value="OCIO">🎉 OCIO</option>
-</select>
-
-<label>📁 Subcategoría</label>
-<select id="subcategory"></select>
-
-<label>💰 Monto</label>
-<div class="amount">
-<select id="dollars"></select>
-<select id="cents"></select>
+<label>💵 Monto</label>
+<div class="monto">
+  <select id="dolares"></select>
+  <select id="centavos"></select>
 </div>
 
+<label>📂 Categoría</label>
+<select id="categoria"></select>
+
+<label>📁 Subcategoría</label>
+<select id="subcategoria"></select>
+
 <label>👤 Beneficiario</label>
-<select id="beneficiary">
-<option>Yo</option>
-<option>Familia</option>
-<option>Otros</option>
+<select id="beneficiario">
+  <option>Yo</option>
+  <option>Familia</option>
+  <option>Otros</option>
 </select>
 
 <label>📍 Lugar</label>
-<select id="place">
-<option>Supermercado</option>
-<option>Farmacia</option>
-<option>Gasolinera</option>
-<option>Trabajo</option>
-<option>Casa</option>
-<option>Restaurante</option>
+<select id="lugar">
+  <option>Trabajo</option>
+  <option>Casa</option>
+  <option>Supermercado</option>
+  <option>Restaurante</option>
+  <option>Gimnasio</option>
+  <option>Otro</option>
 </select>
 
 <label>💳 Medio de pago</label>
-<select id="payment">
-<option>Efectivo</option>
-<option>Tarjeta</option>
-<option>Peigo</option>
-<option>Online-Gye</option>
-<option>Online-Peigo</option>
+<select id="pago">
+  <option>Efectivo</option>
+  <option>Tarjeta</option>
+  <option>Peigo</option>
+  <option>Online-Gye</option>
+  <option>Online-Peigo</option>
 </select>
 
-<button class="primary" onclick="save()">Guardar gasto</button>
-</div>
-</section>
+<button onclick="guardar()">Guardar gasto</button>
 
-<section id="dash">
-<div class="card">
-<div class="total" id="total">$0.00</div>
 </div>
-</section>
-
-<section id="data">
-<div class="card">
-<button class="primary" onclick="exportCSV()">Exportar a Excel</button>
-</div>
-</section>
 
 <script>
-const subs={
-ALIMENTACION:["🥐 Desayuno","🍱 Almuerzo trabajo","🎂 Cumpleaños","🥤 Bebidas","🥗 Snack"],
-TRANSPORTE:["⛽ Gasolina","🚕 Taxi","🚌 Bus","🔧 Mantenimiento"],
-SALUD:["💊 Medicinas","🏃 Ejercicio"],
-OCIO:["🎉 Salidas","🎁 Regalos"]
+/* MONTO */
+for(let i=0;i<=500;i++){
+  dolares.innerHTML += `<option>${i}</option>`;
+}
+for(let i=0;i<100;i++){
+  centavos.innerHTML += `<option>${i.toString().padStart(2,'0')}</option>`;
+}
+
+/* CATEGORÍAS */
+const categorias = {
+  "🍽️ Comida": ["Almuerzo", "Cena", "Cumpleaños", "Snack"],
+  "🚗 Transporte": ["Bus", "Taxi", "Gasolina"],
+  "🏃 Salud / Deporte": ["Gatorade", "Gimnasio", "Equipo"],
+  "🎉 Social": ["Regalo", "Salida", "Evento"],
+  "🏠 Hogar": ["Servicios", "Compras", "Mantenimiento"]
 };
 
-function show(id){
-document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));
-document.getElementById(id).classList.add("active");
-if(id==="dash")updateDash();
+const cat = document.getElementById("categoria");
+const sub = document.getElementById("subcategoria");
+
+for (let c in categorias) {
+  cat.innerHTML += `<option>${c}</option>`;
 }
 
-function loadSub(){
-subcategory.innerHTML="";
-(subs[category.value]||[]).forEach(s=>subcategory.add(new Option(s,s)));
+function cargarSub() {
+  sub.innerHTML = "";
+  categorias[cat.value].forEach(s => {
+    sub.innerHTML += `<option>${s}</option>`;
+  });
 }
+cat.onchange = cargarSub;
+cargarSub();
 
-for(let i=0;i<=500;i++)dollars.add(new Option("$"+i,i));
-for(let i=0;i<100;i++)cents.add(new Option(i.toString().padStart(2,"0"),i));
+/* GUARDAR */
+function guardar() {
+  const gasto = {
+    fecha: new Date().toISOString(),
+    monto: `${dolares.value}.${centavos.value}`,
+    categoria: cat.value,
+    subcategoria: sub.value,
+    beneficiario: beneficiario.value,
+    lugar: lugar.value,
+    pago: pago.value
+  };
 
-function save(){
-let amt=Number(dollars.value)+Number(cents.value)/100;
-let data=JSON.parse(localStorage.getItem("gastos")||"[]");
-data.push({
-cat:category.value,
-sub:subcategory.value,
-amt,
-beneficiary:beneficiary.value,
-place:place.value,
-payment:payment.value,
-date:new Date().toISOString()
-});
-localStorage.setItem("gastos",JSON.stringify(data));
-alert("Gasto guardado");
-}
+  const data = JSON.parse(localStorage.getItem("gastos") || "[]");
+  data.push(gasto);
+  localStorage.setItem("gastos", JSON.stringify(data));
 
-function updateDash(){
-let data=JSON.parse(localStorage.getItem("gastos")||"[]");
-let total=data.reduce((s,g)=>s+g.amt,0).toFixed(2);
-document.getElementById("total").innerText="$"+total;
-}
-
-function exportCSV(){
-let data=JSON.parse(localStorage.getItem("gastos")||"[]");
-let csv="Categoria,Subcategoria,Monto,Beneficiario,Lugar,Medio,Fecha\n";
-data.forEach(g=>{
-csv+=`${g.cat},${g.sub},${g.amt},${g.beneficiary},${g.place},${g.payment},${g.date}\n`;
-});
-let a=document.createElement("a");
-a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
-a.download="gastos.csv";
-a.click();
+  alert("✅ Gasto guardado");
 }
 </script>
 
