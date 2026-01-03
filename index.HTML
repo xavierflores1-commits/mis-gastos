@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mis Gastos</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root {
+  --bg:#f2f2f7;
+  --card:#fff;
+  --border:#e5e5ea;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:-apple-system,BlinkSystemFont,sans-serif;
+  background:var(--bg);
+}
+
+header{
+  display:flex;
+  justify-content:space-around;
+  background:var(--card);
+  border-bottom:1px solid var(--border);
+  padding:10px 0;
+}
+
+header button{
+  background:none;
+  border:none;
+  font-size:18px;
+}
+
+section{display:none;padding:14px}
+section.active{display:block}
+
+.card{
+  background:var(--card);
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:14px;
+  box-shadow:0 1px 4px rgba(0,0,0,.05);
+}
+
+label{
+  font-size:13px;
+  color:#666;
+  margin-top:10px;
+  display:block;
+}
+
+select,button{
+  width:100%;
+  padding:12px;
+  font-size:16px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  margin-top:6px;
+}
+
+.amount{display:flex;gap:8px}
+.amount select{flex:1}
+
+button.primary{
+  background:#007aff;
+  color:#fff;
+  border:none;
+  font-weight:600;
+}
+
+.total{
+  font-size:28px;
+  font-weight:700;
+  text-align:center;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <button onclick="show('add')">➕</button>
+  <button onclick="show('dash')">📊</button>
+  <button onclick="show('data')">📁</button>
+</header>
+
+<section id="add" class="active">
+<div class="card">
+
+<label>📂 Categoría</label>
+<select id="category" onchange="loadSub()">
+<option value="">Selecciona</option>
+<option value="ALIMENTACION">🍽️ ALIMENTACIÓN</option>
+<option value="TRANSPORTE">🚗 TRANSPORTE</option>
+<option value="SALUD">💊 SALUD</option>
+<option value="OCIO">🎉 OCIO</option>
+</select>
+
+<label>📁 Subcategoría</label>
+<select id="subcategory"></select>
+
+<label>💰 Monto</label>
+<div class="amount">
+<select id="dollars"></select>
+<select id="cents"></select>
+</div>
+
+<label>👤 Beneficiario</label>
+<select id="beneficiary">
+<option>Yo</option>
+<option>Familia</option>
+<option>Otros</option>
+</select>
+
+<label>📍 Lugar</label>
+<select id="place">
+<option>Supermercado</option>
+<option>Farmacia</option>
+<option>Gasolinera</option>
+<option>Trabajo</option>
+<option>Casa</option>
+<option>Restaurante</option>
+</select>
+
+<label>💳 Medio de pago</label>
+<select id="payment">
+<option>Efectivo</option>
+<option>Tarjeta</option>
+<option>Peigo</option>
+<option>Online-Gye</option>
+<option>Online-Peigo</option>
+</select>
+
+<button class="primary" onclick="save()">Guardar gasto</button>
+</div>
+</section>
+
+<section id="dash">
+<div class="card">
+<div class="total" id="total">$0.00</div>
+</div>
+</section>
+
+<section id="data">
+<div class="card">
+<button class="primary" onclick="exportCSV()">Exportar a Excel</button>
+</div>
+</section>
+
+<script>
+const subs={
+ALIMENTACION:["🥐 Desayuno","🍱 Almuerzo trabajo","🎂 Cumpleaños","🥤 Bebidas","🥗 Snack"],
+TRANSPORTE:["⛽ Gasolina","🚕 Taxi","🚌 Bus","🔧 Mantenimiento"],
+SALUD:["💊 Medicinas","🏃 Ejercicio"],
+OCIO:["🎉 Salidas","🎁 Regalos"]
+};
+
+function show(id){
+document.querySelectorAll("section").forEach(s=>s.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+if(id==="dash")updateDash();
+}
+
+function loadSub(){
+subcategory.innerHTML="";
+(subs[category.value]||[]).forEach(s=>subcategory.add(new Option(s,s)));
+}
+
+for(let i=0;i<=500;i++)dollars.add(new Option("$"+i,i));
+for(let i=0;i<100;i++)cents.add(new Option(i.toString().padStart(2,"0"),i));
+
+function save(){
+let amt=Number(dollars.value)+Number(cents.value)/100;
+let data=JSON.parse(localStorage.getItem("gastos")||"[]");
+data.push({
+cat:category.value,
+sub:subcategory.value,
+amt,
+beneficiary:beneficiary.value,
+place:place.value,
+payment:payment.value,
+date:new Date().toISOString()
+});
+localStorage.setItem("gastos",JSON.stringify(data));
+alert("Gasto guardado");
+}
+
+function updateDash(){
+let data=JSON.parse(localStorage.getItem("gastos")||"[]");
+let total=data.reduce((s,g)=>s+g.amt,0).toFixed(2);
+document.getElementById("total").innerText="$"+total;
+}
+
+function exportCSV(){
+let data=JSON.parse(localStorage.getItem("gastos")||"[]");
+let csv="Categoria,Subcategoria,Monto,Beneficiario,Lugar,Medio,Fecha\n";
+data.forEach(g=>{
+csv+=`${g.cat},${g.sub},${g.amt},${g.beneficiary},${g.place},${g.payment},${g.date}\n`;
+});
+let a=document.createElement("a");
+a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+a.download="gastos.csv";
+a.click();
+}
+</script>
+
+</body>
+</html>
